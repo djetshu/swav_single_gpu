@@ -85,17 +85,19 @@ def initialize_exp(params, *args, dump_params=True):
 
     # create repo to store checkpoints
     params.dump_checkpoints = os.path.join(params.dump_path, "checkpoints")
-    if not params.rank and not os.path.isdir(params.dump_checkpoints):
+    if not os.path.isdir(params.dump_checkpoints):
         os.mkdir(params.dump_checkpoints)
 
+
     # create a panda object to log loss and acc
+    rank = getattr(params, 'rank', 0)
     training_stats = PD_Stats(
-        os.path.join(params.dump_path, "stats" + str(params.rank) + ".pkl"), args
+        os.path.join(params.dump_path, "stats" + str(rank) + ".pkl"), args
     )
 
     # create a logger
     logger = create_logger(
-        os.path.join(params.dump_path, "train.log"), rank=params.rank
+        os.path.join(params.dump_path, "train.log"), rank=rank
     )
     logger.info("============ Initialized logger ============")
     logger.info(
@@ -119,13 +121,18 @@ def restart_from_checkpoint(ckp_paths, run_variables=None, **kwargs):
         ckp_path = ckp_paths
 
     if not os.path.isfile(ckp_path):
+        logger.info("No checkpoint has found at {}".format(ckp_path))
         return
 
     logger.info("Found checkpoint at {}".format(ckp_path))
 
+     # Use the current CUDA device, but avoid distributed calls
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    map_location = device
+
     # open checkpoint file
     checkpoint = torch.load(
-        ckp_path, map_location="cuda:" + str(torch.distributed.get_rank() % torch.cuda.device_count())
+        ckp_path, map_location=map_location
     )
 
     # key is what to look for in the checkpoint file
@@ -188,9 +195,9 @@ def accuracy(output, target, topk=(1,)):
         _, pred = output.topk(maxk, 1, True, True)
         pred = pred.t()
         correct = pred.eq(target.view(1, -1).expand_as(pred))
-
+        logger.info("Correct size: '{}'".format(correct.size()))
         res = []
         for k in topk:
-            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+            correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
