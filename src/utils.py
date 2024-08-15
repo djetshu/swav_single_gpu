@@ -134,10 +134,29 @@ def restart_from_checkpoint(ckp_paths, run_variables=None, **kwargs):
     checkpoint = torch.load(
         ckp_path, map_location=map_location
     )
+    
+    # Handle possible 'module.' prefix in checkpoint keys
+    # Remove 'module.' prefix if present
+    checkpoint = {k.replace('module.', ''): v for k, v in checkpoint.items()}
+
+    #check_keys = list(checkpoint.keys())
+    #model = kwargs['state_dict'].state_dict()
+    try:
+        kwargs['state_dict'].load_state_dict(checkpoint)
+        logger.info("Loaded model state from checkpoint '{}'".format(ckp_path))
+    except:
+        logger.warning("=> failed to load state_dict from checkpoint '{}'".format(ckp_path))
+
+    if 'optimizer' in kwargs and 'optimizer' in checkpoint:
+        kwargs['optimizer'].load_state_dict(checkpoint['optimizer'])
+        logger.info("Loaded optimizer state from checkpoint '{}'".format(ckp_path))
+    else:
+        logger.warning("=> failed to load optimizer from checkpoint '{}'".format(ckp_path))
 
     # key is what to look for in the checkpoint file
     # value is the object to load
     # example: {'state_dict': model}
+    """
     for key, value in kwargs.items():
         if key in checkpoint and value is not None:
             try:
@@ -150,7 +169,7 @@ def restart_from_checkpoint(ckp_paths, run_variables=None, **kwargs):
             logger.warning(
                 "=> failed to load {} from checkpoint '{}'".format(key, ckp_path)
             )
-
+    """
     # re load variable important for the run
     if run_variables is not None:
         for var_name in run_variables:

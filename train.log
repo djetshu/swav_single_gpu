@@ -1,0 +1,66 @@
+INFO - 08/13/24 14:26:24 - 0:00:00 - ============ Initialized logger ============
+INFO - 08/13/24 14:26:24 - 0:00:00 - arch: resnet50
+                                     base_lr: 4.8
+                                     batch_size: 64
+                                     checkpoint_freq: 25
+                                     crops_for_assign: [0, 1]
+                                     data_path: /path/to/imagenet
+                                     dump_checkpoints: ./checkpoints
+                                     dump_path: .
+                                     epoch_queue_starts: 15
+                                     epochs: 100
+                                     epsilon: 0.05
+                                     feat_dim: 128
+                                     final_lr: 0
+                                     freeze_prototypes_niters: 313
+                                     hidden_mlp: 2048
+                                     max_scale_crops: [1]
+                                     min_scale_crops: [0.14]
+                                     nmb_crops: [2]
+                                     nmb_prototypes: 3000
+                                     queue_length: 0
+                                     seed: 31
+                                     sinkhorn_iterations: 3
+                                     size_crops: [224]
+                                     start_warmup: 0
+                                     temperature: 0.1
+                                     use_fp16: False
+                                     warmup_epochs: 10
+                                     wd: 1e-06
+                                     workers: 10
+INFO - 08/13/24 14:26:24 - 0:00:00 - The experiment will be stored in .
+                                     
+
+INFO - 08/13/24 14:28:40 - 0:00:00 - ============ Initialized logger ============
+INFO - 08/13/24 14:28:40 - 0:00:00 - arch: resnet50
+                                     base_lr: 0.6
+                                     batch_size: 16
+                                     checkpoint_freq: 25
+                                     crops_for_assign: [0, 1]
+                                     data_path: 
+                                     dump_checkpoints: checkpoints
+                                     dump_path: 
+                                     epoch_queue_starts: 15
+                                     epochs: 200
+                                     epsilon: 0.05
+                                     feat_dim: 128
+                                     final_lr: 0.0006
+                                     freeze_prototypes_niters: 5005
+                                     hidden_mlp: 2048
+                                     max_scale_crops: [1.0, 0.14]
+                                     min_scale_crops: [0.14, 0.05]
+                                     nmb_crops: [2, 6]
+                                     nmb_prototypes: 3000
+                                     queue_length: 3840
+                                     seed: 31
+                                     sinkhorn_iterations: 3
+                                     size_crops: [224, 96]
+                                     start_warmup: 0
+                                     temperature: 0.1
+                                     use_fp16: True
+                                     warmup_epochs: 0
+                                     wd: 1e-06
+                                     workers: 1
+INFO - 08/13/24 14:28:40 - 0:00:00 - The experiment will be stored in 
+                                     
+

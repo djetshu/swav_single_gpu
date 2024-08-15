@@ -21,6 +21,7 @@ from src.utils import (
 
 from src.multicropdataset import MultiCropDataset
 import src.resnet50 as resnet_models
+from torch.utils.tensorboard import SummaryWriter
 
 logger = getLogger()
 
@@ -89,6 +90,7 @@ def main():
     args = parser.parse_args()
     fix_random_seeds(args.seed)
     logger, training_stats = initialize_exp(args, "epoch", "loss")
+    torch.cuda.empty_cache()
 
     # build data
     train_dataset = MultiCropDataset(
@@ -163,6 +165,14 @@ def main():
 
     cudnn.benchmark = True
 
+    # Create a TensorBoard writer
+    log_dir = os.path.join(args.dump_path, "log")
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir, exist_ok=True)
+        print(f"Directory '{log_dir}' created successfully.")
+    tensorboard_writer = SummaryWriter(log_dir=log_dir)
+    
+
     for epoch in range(start_epoch, args.epochs):
         # train the network for one epoch
         logger.info("============ Starting epoch %i ... ============" % epoch)
@@ -177,7 +187,7 @@ def main():
             ).cuda()
 
         # train the network
-        scores, queue = train(train_loader, model, optimizer, epoch, queue, lr_schedule, scaler)
+        scores, queue = train(train_loader, model, optimizer, epoch, queue, lr_schedule, scaler, tensorboard_writer)
         training_stats.update(scores)
 
         # save checkpoints
@@ -197,9 +207,12 @@ def main():
             )
         if queue is not None:
             torch.save({"queue": queue}, queue_path)
+    
+    # Close Tensorboard writer
+    tensorboard_writer.close()
 
 
-def train(train_loader, model, optimizer, epoch, queue, lr_schedule, scaler):
+def train(train_loader, model, optimizer, epoch, queue, lr_schedule, scaler, tensorboard_writer):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -277,6 +290,11 @@ def train(train_loader, model, optimizer, epoch, queue, lr_schedule, scaler):
         losses.update(loss.item(), inputs[0].size(0))
         batch_time.update(time.time() - end)
         end = time.time()
+
+        # Log metrics to TensorBoard
+        tensorboard_writer.add_scalar('Loss/train', losses.avg, epoch * len(train_loader) + it)
+        tensorboard_writer.add_scalar('Learning Rate', optimizer.param_groups[0]["lr"], epoch * len(train_loader) + it)
+
         if it % 50 == 0:
             logger.info(
                 "Epoch: [{0}][{1}]\t"

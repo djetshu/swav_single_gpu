@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Python: main_swav_no_apex",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/main_swav_no_apex.py",
+        "console": "integratedTerminal",
+        "args": [
+          "--data_path", "/home/jetshu/Documents/PLAEX/code/PLAEXDatabaseManager/SimplerDataset/train",
+          "--epochs", "200",
+          "--base_lr", "0.6",
+          "--final_lr", "0.0006",
+          "--warmup_epochs", "0",
+          "--batch_size", "16",
+          "--workers", "1",
+          "--size_crops", "224", "96",
+          "--nmb_crops", "2", "6",
+          "--min_scale_crops", "0.14", "0.05",
+          "--max_scale_crops", "1.", "0.14",
+          "--use_fp16", "true",
+          "--freeze_prototypes_niters", "5005",
+          "--queue_length", "3840",
+          "--epoch_queue_starts", "15",
+          "--crops_for_assign", "0", "1",
+          "--temperature", "0.1",
+          "--epsilon", "0.05",
+          "--sinkhorn_iterations", "3",
+          "--feat_dim", "128",
+          "--nmb_prototypes", "3000",
+          "--wd", "0.000001",
+          "--arch", "resnet50",
+          "--dump_path", "/home/jetshu/Documents/PLAEX/code/SwAV/swav_single_gpu/experiments/swav_400ep_bs256_pretrain"
+        ]
+      }
+    ]
+  }
