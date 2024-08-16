@@ -130,13 +130,13 @@ def restart_from_checkpoint(ckp_paths, run_variables=None, **kwargs):
     )
 
     checkpoint = {k.replace('module.', ''): v for k, v in checkpoint.items()}
-    #check_keys = list(checkpoint.keys())
-    #model_a = kwargs['state_dict'].state_dict()
-    #logger.info("Check_keys: {}".format(check_keys))
-    #logger.info("Check_keys: {}".format(model_a))
+    check_keys = list(checkpoint.keys())
+    model_a = kwargs['state_dict'].state_dict()
+    logger.info("Check_keys: {}".format(check_keys))
+    logger.info("Check_keys: {}".format(model_a))
 
     try:
-        kwargs['state_dict'].load_state_dict(checkpoint)
+        kwargs['state_dict'].load_state_dict(checkpoint, strict=False)
         logger.info("Loaded model state from checkpoint '{}'".format(ckp_path))
     except:
         logger.warning("=> failed to load state_dict from checkpoint '{}'".format(ckp_path))
