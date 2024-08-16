@@ -117,6 +117,9 @@ parser.add_argument("--syncbn_process_group_size", type=int, default=8, help="""
 parser.add_argument("--dump_path", type=str, default=".",
                     help="experiment dump path for checkpoints and log")
 parser.add_argument("--seed", type=int, default=31, help="seed")
+parser.add_argument("--checkpoint_path", type=str, default="checkpoint.pth.tar", help="checkpoint_path")
+
+args.checkpoint_file
 
 # Implement LARC optimizer
 class LARC(torch.optim.Optimizer):
@@ -155,6 +158,7 @@ def main():
     init_distributed_mode(args)
     fix_random_seeds(args.seed)
     logger, training_stats = initialize_exp(args, "epoch", "loss")
+    torch.cuda.empty_cache()
 
     # build data
     train_dataset = MultiCropDataset(
@@ -218,7 +222,7 @@ def main():
     # optionally resume from a checkpoint
     to_restore = {"epoch": 0}
     restart_from_checkpoint(
-        os.path.join(args.dump_path, "checkpoint.pth.tar"),
+        os.path.join(args.checkpoint_path),
         run_variables=to_restore,
         state_dict=model,
         optimizer=optimizer,

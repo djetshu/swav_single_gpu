@@ -119,6 +119,7 @@ def restart_from_checkpoint(ckp_paths, run_variables=None, **kwargs):
         ckp_path = ckp_paths
 
     if not os.path.isfile(ckp_path):
+        logger.info("No checkpoint at {}".format(ckp_path))
         return
 
     logger.info("Found checkpoint at {}".format(ckp_path))
