@@ -129,6 +129,25 @@ def restart_from_checkpoint(ckp_paths, run_variables=None, **kwargs):
         ckp_path, map_location="cuda:" + str(torch.distributed.get_rank() % torch.cuda.device_count())
     )
 
+    check_keys = list(checkpoint.keys())
+    model_a = kwargs['state_dict'].state_dict()
+    logger.info("Check_keys: {}".format(check_keys))
+    logger.info("Check_keys: {}".format(model_a))
+
+    print()
+    try:
+        kwargs['state_dict'].load_state_dict(checkpoint)
+        logger.info("Loaded model state from checkpoint '{}'".format(ckp_path))
+    except:
+        logger.warning("=> failed to load state_dict from checkpoint '{}'".format(ckp_path))
+
+    if 'optimizer' in kwargs and 'optimizer' in checkpoint:
+        kwargs['optimizer'].load_state_dict(checkpoint['optimizer'])
+        logger.info("Loaded optimizer state from checkpoint '{}'".format(ckp_path))
+    else:
+        logger.warning("=> failed to load optimizer from checkpoint '{}'".format(ckp_path))
+
+
     # key is what to look for in the checkpoint file
     # value is the object to load
     # example: {'state_dict': model}
