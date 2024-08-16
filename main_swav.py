@@ -362,7 +362,7 @@ def train(train_loader, model, optimizer, epoch, lr_schedule, queue, scaler):
                     batch_time=batch_time,
                     data_time=data_time,
                     loss=losses,
-                    lr=optimizer.optim.param_groups[0]["lr"],
+                    lr=optimizer.param_groups[0]["lr"],
                 )
             )
     return (epoch, losses.avg), queue
