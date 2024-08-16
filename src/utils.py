@@ -133,7 +133,7 @@ def restart_from_checkpoint(ckp_paths, run_variables=None, **kwargs):
     check_keys = list(checkpoint.keys())
     model_a = kwargs['state_dict'].state_dict()
     logger.info("Check_keys: {}".format(check_keys))
-    logger.info("Check_keys: {}".format(model_a))
+    logger.info("kwargs['state_dict']: {}".format(model_a))
 
     try:
         kwargs['state_dict'].load_state_dict(checkpoint, strict=False)
