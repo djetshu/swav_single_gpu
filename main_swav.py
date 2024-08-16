@@ -19,8 +19,7 @@ import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 import torch.optim
-import apex
-from apex.parallel.LARC import LARC
+import torch.cuda.amp as amp
 
 from src.utils import (
     bool_flag,
@@ -119,6 +118,36 @@ parser.add_argument("--dump_path", type=str, default=".",
                     help="experiment dump path for checkpoints and log")
 parser.add_argument("--seed", type=int, default=31, help="seed")
 
+# Implement LARC optimizer
+class LARC(torch.optim.Optimizer):
+    def __init__(self, optimizer, trust_coefficient=0.001, clip=False):
+        defaults = dict(trust_coefficient=trust_coefficient, clip=clip)
+        super(LARC, self).__init__(optimizer.param_groups, defaults)
+        self.optimizer = optimizer
+        self.trust_coefficient = trust_coefficient
+        self.clip = clip
+
+    def step(self, closure=None):
+        # Save the original parameters
+        for group in self.optimizer.param_groups:
+            for p in group['params']:
+                if p.grad is None:
+                    continue
+                d_p = p.grad.data
+                param_norm = p.data.norm()
+                grad_norm = d_p.norm()
+
+                # LARC adjustment
+                trust_ratio = self.trust_coefficient * (param_norm / (grad_norm + 1e-8))
+                if self.clip:
+                    trust_ratio = min(1.0, trust_ratio)
+                adjusted_d_p = d_p * trust_ratio
+
+                # Apply the adjusted gradient
+                p.grad.data.copy_(adjusted_d_p)
+
+        # Step with the base optimizer
+        self.optimizer.step(closure)
 
 def main():
     global args
@@ -156,11 +185,6 @@ def main():
     # synchronize batch norm layers
     if args.sync_bn == "pytorch":
         model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
-    elif args.sync_bn == "apex":
-        # with apex syncbn we sync bn per group because it speeds up computation
-        # compared to global syncbn
-        process_group = apex.parallel.create_syncbn_process_group(args.syncbn_process_group_size)
-        model = apex.parallel.convert_syncbn_model(model, process_group=process_group)
     # copy model to GPU
     model = model.cuda()
     if args.rank == 0:
@@ -182,10 +206,8 @@ def main():
     lr_schedule = np.concatenate((warmup_lr_schedule, cosine_lr_schedule))
     logger.info("Building optimizer done.")
 
-    # init mixed precision
-    if args.use_fp16:
-        model, optimizer = apex.amp.initialize(model, optimizer, opt_level="O1")
-        logger.info("Initializing mixed precision done.")
+    # Initialize mixed precision
+    scaler = amp.GradScaler()  # Initialize the GradScaler for mixed precision
 
     # wrap model
     model = nn.parallel.DistributedDataParallel(
@@ -200,7 +222,7 @@ def main():
         run_variables=to_restore,
         state_dict=model,
         optimizer=optimizer,
-        amp=apex.amp,
+        amp=amp,
     )
     start_epoch = to_restore["epoch"]
 
@@ -231,7 +253,7 @@ def main():
             ).cuda()
 
         # train the network
-        scores, queue = train(train_loader, model, optimizer, epoch, lr_schedule, queue)
+        scores, queue = train(train_loader, model, optimizer, epoch, lr_schedule, queue, scaler)
         training_stats.update(scores)
 
         # save checkpoints
@@ -241,8 +263,6 @@ def main():
                 "state_dict": model.state_dict(),
                 "optimizer": optimizer.state_dict(),
             }
-            if args.use_fp16:
-                save_dict["amp"] = apex.amp.state_dict()
             torch.save(
                 save_dict,
                 os.path.join(args.dump_path, "checkpoint.pth.tar"),
@@ -256,7 +276,7 @@ def main():
             torch.save({"queue": queue}, queue_path)
 
 
-def train(train_loader, model, optimizer, epoch, lr_schedule, queue):
+def train(train_loader, model, optimizer, epoch, lr_schedule, queue, scaler):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -316,17 +336,15 @@ def train(train_loader, model, optimizer, epoch, lr_schedule, queue):
 
         # ============ backward and optim step ... ============
         optimizer.zero_grad()
-        if args.use_fp16:
-            with apex.amp.scale_loss(loss, optimizer) as scaled_loss:
-                scaled_loss.backward()
-        else:
-            loss.backward()
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+
         # cancel gradients for the prototypes
         if iteration < args.freeze_prototypes_niters:
             for name, p in model.named_parameters():
                 if "prototypes" in name:
                     p.grad = None
-        optimizer.step()
 
         # ============ misc ... ============
         losses.update(loss.item(), inputs[0].size(0))
