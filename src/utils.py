@@ -128,6 +128,7 @@ def restart_from_checkpoint(ckp_paths, run_variables=None, **kwargs):
     checkpoint = torch.load(
         ckp_path, map_location="cuda:" + str(torch.distributed.get_rank() % torch.cuda.device_count())
     )
+
     checkpoint = {k.replace('module.', ''): v for k, v in checkpoint.items()}
     #check_keys = list(checkpoint.keys())
     #model_a = kwargs['state_dict'].state_dict()
@@ -150,6 +151,7 @@ def restart_from_checkpoint(ckp_paths, run_variables=None, **kwargs):
     # key is what to look for in the checkpoint file
     # value is the object to load
     # example: {'state_dict': model}
+    """
     for key, value in kwargs.items():
         if key in checkpoint and value is not None:
             try:
@@ -162,7 +164,7 @@ def restart_from_checkpoint(ckp_paths, run_variables=None, **kwargs):
             logger.warning(
                 "=> failed to load {} from checkpoint '{}'".format(key, ckp_path)
             )
-
+    """
     # re load variable important for the run
     if run_variables is not None:
         for var_name in run_variables:
