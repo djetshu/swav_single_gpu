@@ -119,8 +119,6 @@ parser.add_argument("--dump_path", type=str, default=".",
 parser.add_argument("--seed", type=int, default=31, help="seed")
 parser.add_argument("--checkpoint_path", type=str, default="checkpoint.pth.tar", help="checkpoint_path")
 
-args.checkpoint_file
-
 # Implement LARC optimizer
 class LARC(torch.optim.Optimizer):
     def __init__(self, optimizer, trust_coefficient=0.001, clip=False):
