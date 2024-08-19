@@ -98,8 +98,8 @@ def main():
     )
 
     # build data
-    train_dataset = datasets.ImageFolder(os.path.join(args.data_path, "train"))
-    val_dataset = datasets.ImageFolder(os.path.join(args.data_path, "val"))
+    train_dataset = datasets.ImageFolder(os.path.join(args.data_path, "train", "train"))
+    val_dataset = datasets.ImageFolder(os.path.join(args.data_path, "val", "val"))
     tr_normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406], std=[0.228, 0.224, 0.225]
     )
